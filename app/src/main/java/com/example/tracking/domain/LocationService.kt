@@ -1,6 +1,7 @@
 package com.example.tracking.domain
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -11,11 +12,14 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.WorkRequest
+import java.util.concurrent.TimeUnit
 import com.example.tracking.data.local.LocationEntity
 import com.example.tracking.data.repository.LocationRepository
 import com.example.tracking.worker.SyncWorker
@@ -42,11 +46,15 @@ class LocationService : Service() {
     @Inject lateinit var repository: LocationRepository
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val notificationManager by lazy { getSystemService(NotificationManager::class.java) }
+    private val channelId = "tracking_channel"
+    private val notificationId = 1
 
     override fun onCreate() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        startForeground(1, createNotification())
+        createNotificationChannel()
+        startForeground(notificationId, createNotification())
         requestLocationUpdates()
     }
 
@@ -61,7 +69,6 @@ class LocationService : Service() {
         override fun onLocationResult(result: LocationResult) {
             result.locations.forEach { loc ->
                 serviceScope.launch {
-
                     repository.saveLocation(
                         LocationEntity(
                             latitude = loc.latitude,
@@ -71,6 +78,7 @@ class LocationService : Service() {
                             timestamp = System.currentTimeMillis()
                         )
                     )
+                    updateNotification(loc.latitude, loc.longitude)
                     triggerSync()
                 }
             }
@@ -83,18 +91,44 @@ class LocationService : Service() {
             .build()
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
             .setConstraints(constraints)
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS
+            )
             .build()
         WorkManager.getInstance(this).enqueueUniqueWork("SyncWork", ExistingWorkPolicy.KEEP, request)
     }
 
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            channelId,
+            "Tracking",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Location tracking service"
+        }
+        notificationManager.createNotificationChannel(channel)
+    }
+
     private fun createNotification(): Notification {
-        val channelId = "tracking_channel"
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(channelId, "Tracking", NotificationManager.IMPORTANCE_LOW))
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle("Kredily Tracking")
+            .setContentText("Starting location tracking...")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setOngoing(true)
             .build()
+    }
+
+    @SuppressLint("DefaultLocale")
+    private fun updateNotification(latitude: Double, longitude: Double) {
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Kredily Tracking")
+            .setContentText("Current Location - Lat: ${String.format("%.6f", latitude)}, Lng: ${String.format("%.6f", longitude)}")
+            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setOngoing(true)
+            .build()
+        notificationManager.notify(notificationId, notification)
     }
 
     override fun onDestroy() {
