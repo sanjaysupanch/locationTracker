@@ -1,17 +1,15 @@
-# Location Tracker
+# Chatbot
 
-A robust Android application for continuous location tracking with offline support and automatic synchronization. The app tracks device location in the background using a foreground service, stores locations locally to ensure zero data loss, and automatically syncs with a remote server when network connectivity is available.
+A real-time chatbot application for Android, built with modern Android development tools and best practices. The app facilitates instant two-way communication, featuring a sleek user interface and a robust architecture. It uses a WebSocket for real-time messaging and is structured to be scalable and maintainable.
 
 ## Features
 
-- **Continuous Location Tracking**: High-accuracy GPS location tracking using Google Play Services Location API
-- **Foreground Service**: Runs as a foreground service with persistent notification to ensure reliable tracking
-- **Offline Support**: All location data is stored locally using Room database, ensuring no data loss even when offline
-- **Automatic Sync**: Background synchronization using WorkManager when network is available
-- **Boot Receiver**: Automatically restarts tracking service after device reboot
-- **Modern UI**: Built with Jetpack Compose and Material Design 3
-- **Real-time Status**: View tracking status, network connectivity, and pending sync count
-- **Zero Data Loss**: FIFO (First In First Out) sync strategy ensures all locations are synced in order
+- **Real-time Messaging**: Instant two-way conversation with a WebSocket-based backend.
+- **Modern UI**: A responsive and intuitive user interface built with Jetpack Compose and Material Design 3.
+- **Offline Support**: A message queue system ensures that messages are sent and received reliably, even with intermittent network connectivity.
+- **Clean Architecture**: Follows MVVM architecture with a clear separation of concerns, making the codebase clean, scalable, and easy to maintain.
+- **Dependency Injection**: Hilt is used for dependency injection, simplifying the management of dependencies and improving testability.
+- **Zero Data Loss**: Ensures that all messages are delivered in the correct order.
 
 ## Tech Stack
 
@@ -19,75 +17,69 @@ A robust Android application for continuous location tracking with offline suppo
 - **UI Framework**: Jetpack Compose
 - **Architecture**: MVVM (Model-View-ViewModel)
 - **Dependency Injection**: Hilt
-- **Database**: Room (SQLite)
-- **Networking**: Retrofit + Gson
-- **Background Work**: WorkManager
-- **Location Services**: Google Play Services Location API
+- **Networking**: OkHttp for WebSocket communication
+- **Real-time Backend**: PieSocket
 - **Minimum SDK**: 26 (Android 8.0)
 - **Target SDK**: 36
 
 ## Architecture
 
-The app follows MVVM architecture with clean separation of concerns:
+The app follows MVVM architecture with a clear separation of concerns:
 
 ```
-app/src/main/java/com/example/tracking/
+app/src/main/java/com/example/chatbot/
 ├── data/
-│   ├── local/          # Room database entities and DAOs
-│   ├── remote/         # API service and request models
-│   └── repository/     # Data repository layer
-├── domain/             # Business logic (LocationService)
-├── ui/                 # Compose UI components and ViewModels
-├── worker/             # WorkManager workers for background sync
+│   ├── repository/     # Data repository layer
+│   └── socket/         # WebSocket client
+├── domain/
+│   ├── model/          # Data models
+│   └── repository/     # Domain repository interfaces
+├── ui/
+│   └── theme/          # Compose UI theme
+├── presentation/       # ViewModels
 ├── di/                 # Dependency injection modules
-└── util/               # Utility classes (BootReceiver, NetworkMonitor)
+└── utils/              # Utility classes
 ```
 
 ## Key Components
 
-### LocationService
-A foreground service that continuously tracks device location using FusedLocationProviderClient. It:
-- Requests location updates every 5 seconds with high accuracy
-- Stores each location in the local database
-- Updates a persistent notification with current location
-- Triggers background sync when new locations are saved
+### PieSocketClient
+A WebSocket client that manages the connection to the PieSocket backend. It:
+- Establishes and maintains the WebSocket connection
+- Listens for incoming messages
+- Sends outgoing messages
 
-### LocationRepository
-Manages location data operations:
-- Saves locations to local Room database
-- Syncs unsynced locations to remote server in FIFO order
-- Tracks pending sync count
+### ChatRepository
+Manages all chat-related data operations:
+- Sends and receives messages through the WebSocket client
+- Manages the message queue for offline support
 
-### SyncWorker
-WorkManager worker that:
-- Syncs all pending locations to the server
-- Retries on failure with exponential backoff
-- Only runs when network is available
+### ChatViewModel
+Exposes the chat state to the UI and handles user interactions:
+- Gets messages from the repository
+- Sends new messages from the user
 
 ## How It Works
 
-1. **Start Tracking**: User taps "Start Tracking" button, which starts the `LocationService` foreground service
-2. **Location Collection**: Service requests location updates every 5 seconds and stores them in Room database
-3. **Local Storage**: Each location is immediately saved locally, ensuring zero data loss
-4. **Background Sync**: When a new location is saved, a WorkManager sync job is triggered
-5. **Network Check**: Sync worker only runs when network is available
-6. **FIFO Sync**: Locations are synced to server in order (oldest first)
-7. **Status Updates**: UI displays real-time tracking status, network connectivity, and pending sync count
+1.  **Establish Connection**: The app connects to the PieSocket backend via a WebSocket.
+2.  **Send Message**: The user types a message and sends it. The message is added to a queue and sent to the backend via the WebSocket.
+3.  **Receive Message**: The app listens for incoming messages from the WebSocket and displays them in the chat UI.
+4.  **Offline Support**: If the app is offline, outgoing messages are queued and sent when the connection is re-established.
 
 ## Project Structure
 
 ```
-locationTracker/
+chatbot/
 ├── app/
 │   ├── src/
 │   │   ├── main/
-│   │   │   ├── java/com/example/tracking/
+│   │   │   ├── java/com/example/chatbot/
 │   │   │   │   ├── data/              # Data layer
 │   │   │   │   ├── domain/            # Domain layer
 │   │   │   │   ├── ui/                # UI layer
-│   │   │   │   ├── worker/            # Background workers
+│   │   │   │   ├── presentation/      # Presentation layer (ViewModels)
 │   │   │   │   ├── di/                # Dependency injection
-│   │   │   │   └── util/              # Utilities
+│   │   │   │   └── utils/             # Utilities
 │   │   │   ├── res/                   # Resources
 │   │   │   └── AndroidManifest.xml
 │   │   └── test/                      # Unit tests
@@ -98,22 +90,9 @@ locationTracker/
 └── README.md
 ```
 
-## Usage
-
-1. **Grant Permissions**: On first launch, grant location and notification permissions
-2. **Start Tracking**: Tap "Start Tracking" to begin location collection
-3. **Monitor Status**: View tracking status, network connectivity, and pending sync count
-4. **Stop Tracking**: Tap "Stop Tracking" to stop the location service
-
-The app will continue tracking in the background even when the app is closed, and will automatically sync data when network is available.
-
 ## Demo
-* https://drive.google.com/file/d/1ayWjOBHcxeXv_bnKKWQiSO-O0L9_R5sd/view?usp=sharing
-* <img width="1080" height="2400" alt="Screenshot_20251228_003421" src="https://github.com/user-attachments/assets/49b2de0c-361f-4ee9-82e0-370cd989bcb0" />
-* <img width="1080" height="2400" alt="Screenshot_20251228_003554" src="https://github.com/user-attachments/assets/49ad4ae4-5c1f-4280-a222-e2ea34baa618" />
+* https://drive.google.com/file/d/1RkHd0oxGELonGypM7Yr0nsl5407HrKXH/view?usp=sharing
 
-## APK Link
-* https://drive.google.com/file/d/1DM5xgY2nwdgkM4KBWvqyn1IMPCw2DTZX/view?usp=sharing
+## APK
+* https://drive.google.com/file/d/13E10xx0l72vcqAlRPAUiu-Ojn78Mvqyd/view?usp=sharing
   
-
-
