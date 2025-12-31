@@ -64,66 +64,6 @@ WorkManager worker that:
 - Retries on failure with exponential backoff
 - Only runs when network is available
 
-### BootReceiver
-BroadcastReceiver that automatically restarts the location tracking service when:
-- Device boots up
-- App is updated/replaced
-
-## Permissions
-
-The app requires the following permissions:
-
-- `ACCESS_FINE_LOCATION` - For precise GPS location tracking
-- `ACCESS_COARSE_LOCATION` - For approximate location (fallback)
-- `INTERNET` - For syncing data to remote server
-- `ACCESS_NETWORK_STATE` - To check network connectivity
-- `FOREGROUND_SERVICE` - For running foreground service
-- `FOREGROUND_SERVICE_LOCATION` - For location-based foreground service
-- `POST_NOTIFICATIONS` - For showing tracking notification (Android 13+)
-
-## Setup Instructions
-
-### Prerequisites
-
-- Android Studio Hedgehog or later
-- JDK 11 or higher
-- Android SDK with API level 26+
-- Google Play Services installed on device/emulator
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd locationTracker
-```
-
-2. Open the project in Android Studio
-
-3. Sync Gradle files and wait for dependencies to download
-
-4. Configure the API endpoint:
-   - Update the base URL in `AppModule.kt` or your API configuration
-   - Ensure your backend API endpoint is correctly configured
-
-5. Build and run the app:
-   - Connect an Android device or start an emulator
-   - Click "Run" in Android Studio or use `./gradlew installDebug`
-
-### Building
-
-To build a debug APK:
-```bash
-./gradlew assembleDebug
-```
-
-To build a release APK:
-```bash
-./gradlew assembleRelease
-```
-
-The APK will be generated in `app/build/outputs/apk/`
-
 ## How It Works
 
 1. **Start Tracking**: User taps "Start Tracking" button, which starts the `LocationService` foreground service
@@ -158,18 +98,6 @@ locationTracker/
 └── README.md
 ```
 
-## Dependencies
-
-Key dependencies used in this project:
-
-- **Jetpack Compose**: Modern declarative UI toolkit
-- **Hilt**: Dependency injection framework
-- **Room**: Local database persistence
-- **Retrofit**: HTTP client for API calls
-- **WorkManager**: Background task scheduling
-- **Google Play Services Location**: Location tracking API
-- **Material Design 3**: Modern UI components
-
 ## Usage
 
 1. **Grant Permissions**: On first launch, grant location and notification permissions
@@ -179,10 +107,11 @@ Key dependencies used in this project:
 
 The app will continue tracking in the background even when the app is closed, and will automatically sync data when network is available.
 
-## Notes
+## Demo
+* https://drive.google.com/file/d/1ayWjOBHcxeXv_bnKKWQiSO-O0L9_R5sd/view?usp=sharing
+* <img width="1080" height="2400" alt="Screenshot_20251228_003421" src="https://github.com/user-attachments/assets/49b2de0c-361f-4ee9-82e0-370cd989bcb0" />
+* <img width="1080" height="2400" alt="Screenshot_20251228_003554" src="https://github.com/user-attachments/assets/49ad4ae4-5c1f-4280-a222-e2ea34baa618" />
 
-- Location tracking requires GPS to be enabled on the device
-- Better accuracy is achieved when device has clear view of the sky
-- Battery usage may be higher due to continuous GPS tracking
-- The app automatically handles network connectivity changes
-- All locations are stored locally first, then synced when possible
+## APK Link
+* https://drive.google.com/file/d/1DM5xgY2nwdgkM4KBWvqyn1IMPCw2DTZX/view?usp=sharing
+  
